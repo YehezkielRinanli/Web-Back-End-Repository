@@ -16,10 +16,21 @@ const User = db.define('users', {
     password: {
         type: DataTypes.STRING,
         allowNull: false
+    },
+    role: {
+        type: DataTypes.ENUM('admin', 'user'),
+        defaultValue: 'user'
+    },
+    collab_edit_count: {
+        type: DataTypes.INTEGER,
+        defaultValue: 0
+    },
+    last_collab_edit_date: {
+        type: DataTypes.DATE,
+        allowNull: true
     }
 }, {
     freezeTableName: true
 });
-
 
 export default User;
