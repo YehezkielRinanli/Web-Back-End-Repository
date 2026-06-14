@@ -17,6 +17,15 @@ const navFolders = document.getElementById('navFolders');
 const navCollabs = document.getElementById('navCollabs'); 
 const navTags = document.getElementById('navTags');
 const navActivities = document.getElementById('navActivities');
+const navAdmin = document.getElementById('navAdmin');
+
+if (navAdmin) {
+    if (user && user.role === 'admin') {
+        navAdmin.style.display = 'block';
+    } else {
+        navAdmin.style.display = 'none';
+    }
+}
 
 const noteModal = document.getElementById('noteModal');
 const noteForm = document.getElementById('noteForm');
@@ -35,17 +44,24 @@ const tagModal = document.getElementById('tagModal');
 const tagForm = document.getElementById('tagForm');
 const cancelTagBtn = document.getElementById('cancelTagBtn');
 
+const bulletinModal = document.getElementById('bulletinModal');
+const bulletinForm = document.getElementById('bulletinForm');
+const cancelBulletinBtn = document.getElementById('cancelBulletinBtn');
+
 let allNotes = [];
 let allFolders = [];
 let allCollabs = []; 
 let allTags = [];
 let allActivities = [];
+let allUsers = [];
+let allBulletins = [];
 
 let currentView = 'notes';
 let editingNoteId = null;
 let editingFolderId = null;
 let editingTagId = null;
 let editingCollabId = null;
+let editingBulletinId = null;
 
 let noteCurrentPage = 1;
 let noteTotalPages = 1;
@@ -98,6 +114,7 @@ function setActiveNav(activeElement) {
         else if (currentView === 'collabs') { mainAddBtn.textContent = 'Undang Teman'; mainAddBtn.style.display = 'block'; }
         else if (currentView === 'tags') { mainAddBtn.textContent = 'Tag Baru'; mainAddBtn.style.display = 'block'; }
         else if (currentView === 'activities') { mainAddBtn.style.display = 'none'; }
+        else if (currentView === 'admin') { mainAddBtn.textContent = 'Buletin Baru'; mainAddBtn.style.display = 'block'; }
     }
 }
 
@@ -162,6 +179,17 @@ if (navActivities) {
     });
 }
 
+if (navAdmin) {
+    navAdmin.addEventListener('click', (e) => {
+        e.preventDefault();
+        currentView = 'admin';
+        setActiveNav(navAdmin);
+        searchInput.placeholder = 'Cari user / buletin...';
+        notesContainer.innerHTML = '<div class="col-12 text-center text-secondary mt-5">Memuat Admin Panel...</div>';
+        fetchAdminData();
+    });
+}
+
 function jalankanFilter() {
     const kataKunci = searchInput.value.toLowerCase();
     if (currentView === 'notes') {
@@ -178,6 +206,10 @@ function jalankanFilter() {
     } else if (currentView === 'activities') {
         const dataTersaring = allActivities.filter(act => act.action.toLowerCase().includes(kataKunci) || (act.description && act.description.toLowerCase().includes(kataKunci)));
         renderActivities(dataTersaring);
+    } else if (currentView === 'admin') {
+        const usersTersaring = allUsers.filter(u => u.username.toLowerCase().includes(kataKunci) || u.email.toLowerCase().includes(kataKunci));
+        const bulletinsTersaring = allBulletins.filter(b => b.title.toLowerCase().includes(kataKunci));
+        renderAdminPanel(usersTersaring, bulletinsTersaring);
     }
 }
 
@@ -458,6 +490,143 @@ function renderActivities(activities) {
     notesContainer.innerHTML = html;
 }
 
+
+async function fetchAdminData() {
+    try {
+        const [usersRes, bulletinsRes] = await Promise.all([
+            fetch('/api/users', { headers: { 'Authorization': `Bearer ${token}` } }),
+            fetch('/api/bulletins', { headers: { 'Authorization': `Bearer ${token}` } })
+        ]);
+        const usersResult = await usersRes.json();
+        const bulletinsResult = await bulletinsRes.json();
+
+        if (usersResult.success) allUsers = usersResult.data;
+        if (bulletinsResult.success) allBulletins = bulletinsResult.data;
+
+        if (currentView === 'admin') renderAdminPanel(allUsers, allBulletins);
+    } catch (error) {
+        console.error(error);
+        if (currentView === 'admin') {
+            notesContainer.innerHTML = '<div class="col-12 text-center text-danger mt-5">Gagal memuat data Admin Panel.</div>';
+        }
+    }
+}
+
+function renderAdminPanel(users, bulletins) {
+    if (currentView !== 'admin') return;
+    notesContainer.innerHTML = '';
+
+    let html = `
+        <div class="col-12 mb-5">
+            <h4 class="text-gold fw-bold mb-3">👥 Manajemen User</h4>
+            <div class="table-responsive">
+                <table class="table table-dark table-hover align-middle border border-secondary rounded">
+                    <thead>
+                        <tr class="text-gold">
+                            <th>Username</th>
+                            <th>Email</th>
+                            <th>Role</th>
+                            <th>Limit Edit Kolaborasi</th>
+                            <th class="text-end">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody>`;
+
+    if (users.length === 0) {
+        html += `<tr><td colspan="5" class="text-center text-secondary py-4">Tidak ada user ditemukan.</td></tr>`;
+    } else {
+        users.forEach(u => {
+            const roleBadge = u.role === 'admin'
+                ? '<span class="badge bg-warning text-dark fw-bold">ADMIN</span>'
+                : '<span class="badge bg-secondary">USER</span>';
+            const limitCount = u.collab_edit_count ?? 0;
+            html += `
+                <tr>
+                    <td class="fw-bold text-light">${u.username}</td>
+                    <td class="text-secondary">${u.email}</td>
+                    <td>${roleBadge}</td>
+                    <td>${limitCount} / 3</td>
+                    <td class="text-end">
+                        <button class="btn btn-sm btn-outline-warning fw-bold reset-collab-btn" data-id="${u.id}" data-username="${u.username}" ${limitCount <= 0 ? 'disabled' : ''}>
+                            Reset Limit
+                        </button>
+                    </td>
+                </tr>`;
+        });
+    }
+
+    html += `
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="col-12">
+            <h4 class="text-gold fw-bold mb-3">📰 Manajemen Buletin</h4>
+            <div class="row g-3" id="adminBulletinList">`;
+
+    if (bulletins.length === 0) {
+        html += `<div class="col-12 text-center text-secondary py-4">Belum ada buletin. Klik "Buletin Baru" untuk membuat.</div>`;
+    } else {
+        bulletins.forEach(b => {
+            const date = b.createdAt ? new Date(b.createdAt).toLocaleString('id-ID', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '';
+            html += `
+                <div class="col-md-6 col-lg-4">
+                    <div class="card h-100 bg-dark border-secondary shadow-sm">
+                        <div class="card-body d-flex flex-column">
+                            <h5 class="card-title text-gold fw-bold">${b.title}</h5>
+                            <p class="card-text text-secondary flex-grow-1" style="white-space: pre-wrap;">${b.content}</p>
+                            <small class="text-secondary mb-2">${date}</small>
+                            <div class="d-flex gap-2 mt-2">
+                                <button class="btn btn-sm btn-outline-warning fw-bold edit-bulletin-btn" data-id="${b.id}" data-title="${b.title.replace(/"/g, '&quot;')}" data-content="${b.content.replace(/"/g, '&quot;')}">Edit</button>
+                                <button class="btn btn-sm btn-outline-danger fw-bold delete-bulletin-btn" data-id="${b.id}">Hapus</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>`;
+        });
+    }
+
+    html += `
+            </div>
+        </div>`;
+
+    notesContainer.innerHTML = html;
+}
+
+
+async function fetchBulletinWidget() {
+    const widget = document.getElementById('bulletinWidget');
+    if (!widget) return;
+    try {
+        const res = await fetch('/api/bulletins', { headers: { 'Authorization': `Bearer ${token}` } });
+        const result = await res.json();
+        if (result.success && result.data.length > 0) {
+            const latest = result.data.slice(0, 3);
+            let html = `<div class="card bg-dark border-secondary shadow-sm mb-2"><div class="card-body">
+                <h5 class="text-gold fw-bold mb-3">📢 Pengumuman Terbaru</h5>`;
+            latest.forEach(b => {
+                const date = b.createdAt ? new Date(b.createdAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : '';
+                html += `
+                    <div class="border-bottom border-secondary pb-2 mb-2">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <strong class="text-light">${b.title}</strong>
+                            <small class="text-secondary">${date}</small>
+                        </div>
+                        <p class="text-secondary mb-0 mt-1" style="white-space: pre-wrap;">${b.content}</p>
+                    </div>`;
+            });
+            html += `</div></div>`;
+            widget.innerHTML = html;
+        } else {
+            widget.innerHTML = '';
+        }
+    } catch (error) {
+        console.error(error);
+        widget.innerHTML = '';
+    }
+}
+
 noteForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     const data = { title: document.getElementById('noteTitle').value, description: document.getElementById('noteDesc').value, dueDate: document.getElementById('noteDate').value, tag: document.getElementById('noteTag').value, folderId: document.getElementById('noteFolder').value || null };
@@ -529,10 +698,39 @@ if(tagForm) {
     });
 }
 
+if (bulletinForm) {
+    bulletinForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const data = { title: document.getElementById('bulletinTitle').value, content: document.getElementById('bulletinContent').value };
+        try {
+            const isEditing = editingBulletinId !== null;
+            const url = isEditing ? `/api/bulletins/${editingBulletinId}` : '/api/bulletins';
+            const method = isEditing ? 'PUT' : 'POST';
+            const response = await fetch(url, { method, headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify(data) });
+            const result = await response.json();
+
+            if (result.success) {
+                bulletinModal.style.display = 'none';
+                bulletinForm.reset();
+                editingBulletinId = null;
+                await fetchAdminData();
+                fetchBulletinWidget();
+                showToast(result.message || "Buletin berhasil disimpan!", "success");
+                logActivity(isEditing ? 'Update Buletin' : 'Buat Buletin', `Judul: ${data.title}`);
+            } else {
+                showToast(result.message, "error");
+            }
+        } catch (error) {
+            showToast("Terjadi kesalahan koneksi ke server.", "error");
+        }
+    });
+}
+
 cancelNoteBtn.addEventListener('click', () => { noteModal.style.display = 'none'; noteForm.reset(); editingNoteId = null; });
 cancelFolderBtn.addEventListener('click', () => { folderModal.style.display = 'none'; folderForm.reset(); editingFolderId = null; });
 cancelCollabBtn.addEventListener('click', () => { collabModal.style.display = 'none'; collabForm.reset(); document.getElementById('collabEmail').readOnly = false; editingCollabId = null; });
 if(cancelTagBtn) cancelTagBtn.addEventListener('click', () => { tagModal.style.display = 'none'; tagForm.reset(); });
+if(cancelBulletinBtn) cancelBulletinBtn.addEventListener('click', () => { bulletinModal.style.display = 'none'; bulletinForm.reset(); editingBulletinId = null; });
 
 notesContainer.addEventListener('click', async (e) => {
     if (e.target.classList.contains('delete-btn')) {
@@ -625,6 +823,59 @@ notesContainer.addEventListener('click', async (e) => {
                 showToast("Aktivitas dihapus", "success");
             } catch (error) {
                 showToast("Gagal menghapus aktivitas", "error");
+            }
+        }
+    }
+
+    if (e.target.classList.contains('reset-collab-btn')) {
+        const userId = e.target.getAttribute('data-id');
+        const username = e.target.getAttribute('data-username');
+        if (await showCustomConfirm('Reset Limit', `Reset limit edit kolaborasi untuk user "${username}" menjadi 0?`)) {
+            try {
+                const response = await fetch(`/api/users/${userId}/reset-collab`, {
+                    method: 'PUT',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const result = await response.json();
+                if (result.success) {
+                    showToast(result.message || "Limit berhasil di-reset!", "success");
+                    logActivity('Reset Limit Kolaborasi', `Limit user ${username} di-reset`);
+                    fetchAdminData();
+                } else {
+                    showToast(result.message, "error");
+                }
+            } catch (error) {
+                showToast("Gagal mereset limit user.", "error");
+            }
+        }
+    }
+
+    if (e.target.classList.contains('edit-bulletin-btn')) {
+        editingBulletinId = e.target.getAttribute('data-id');
+        document.getElementById('bulletinTitle').value = e.target.getAttribute('data-title');
+        document.getElementById('bulletinContent').value = e.target.getAttribute('data-content');
+        document.getElementById('bulletinModalTitle').textContent = "Edit Buletin";
+        bulletinModal.style.display = 'flex';
+    }
+
+    if (e.target.classList.contains('delete-bulletin-btn')) {
+        if (await showCustomConfirm('Hapus Buletin', 'Yakin ingin menghapus buletin ini?')) {
+            try {
+                const response = await fetch(`/api/bulletins/${e.target.getAttribute('data-id')}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const result = await response.json();
+                if (result.success) {
+                    showToast(result.message || "Buletin berhasil dihapus!", "success");
+                    logActivity('Hapus Buletin', 'Sebuah buletin dihapus');
+                    fetchAdminData();
+                    fetchBulletinWidget();
+                } else {
+                    showToast(result.message, "error");
+                }
+            } catch (error) {
+                showToast("Gagal menghapus buletin.", "error");
             }
         }
     }
@@ -749,6 +1000,7 @@ async function startApp() {
     await fetchNotes();   
     await fetchCollabs();
     await fetchTags();
+    fetchBulletinWidget();
 }
 
 document.getElementById('menu-toggle').addEventListener('click', function(e) {
@@ -789,6 +1041,11 @@ if (globalAddBtn) {
             tagForm.reset();
             document.getElementById('tagModalTitle').textContent = "Buat Tag Baru";
             tagModal.style.display = 'flex';
+        } else if (currentView === 'admin') {
+            editingBulletinId = null;
+            bulletinForm.reset();
+            document.getElementById('bulletinModalTitle').textContent = "Buat Buletin Baru";
+            bulletinModal.style.display = 'flex';
         }
     });
 }
