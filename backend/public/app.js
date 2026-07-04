@@ -1,3 +1,8 @@
+// ==========================================================================
+// CONFIGURATION: Alamat base URL API Backend Live di Railway
+// ==========================================================================
+const BASE_URL = "https://memoora.up.railway.app";
+
 const token = localStorage.getItem('token');
 const user = JSON.parse(localStorage.getItem('user'));
 
@@ -162,7 +167,7 @@ function setActiveNav(activeElement) {
 
 async function logActivity(actionName, descriptionText) {
     try {
-        await fetch('http://localhost:3000/api/activities', {
+        await fetch(`${BASE_URL}/api/activities`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify({ action: actionName, description: descriptionText })
@@ -252,7 +257,7 @@ if(statusFilter) statusFilter.addEventListener('change', jalankanFilter);
 
 async function fetchFolders() {
     try {
-        const response = await fetch('http://localhost:3000/api/folders', { headers: { 'Authorization': `Bearer ${token}` } });
+        const response = await fetch(`${BASE_URL}/api/folders`, { headers: { 'Authorization': `Bearer ${token}` } });
         const result = await response.json();
         if (result.success) {
             allFolders = result.data;
@@ -299,7 +304,7 @@ function renderFoldersTemplate(folders) {
 async function fetchBulletins() {
     const bulletinList = document.getElementById('bulletinList');
     try {
-        const response = await fetch('http://localhost:3000/api/bulletins?limit=5', { headers: { 'Authorization': `Bearer ${token}` } });
+        const response = await fetch(`${BASE_URL}/api/bulletins?limit=5`, { headers: { 'Authorization': `Bearer ${token}` } });
         const result = await response.json();
 
         if (result.success) {
@@ -389,7 +394,7 @@ async function fetchNotes(page = 1) {
         if (status && status !== 'all') query += `&status=${status}`;
         if (search) query += `&search=${search}`;
 
-        const response = await fetch(`http://localhost:3000/api/notes${query}`, { headers: { 'Authorization': `Bearer ${token}` } });
+        const response = await fetch(`${BASE_URL}/api/notes${query}`, { headers: { 'Authorization': `Bearer ${token}` } });
         const result = await response.json();
         
         if (result.success) {
@@ -499,7 +504,7 @@ function renderNotesTemplate(data) {
 
 async function fetchCollabs() {
     try {
-        const response = await fetch('http://localhost:3000/api/collabs', { headers: { 'Authorization': `Bearer ${token}` } }); 
+        const response = await fetch(`${BASE_URL}/api/collabs`, { headers: { 'Authorization': `Bearer ${token}` } }); 
         const result = await response.json();
         if (result.success) {
             allCollabs = result.data;
@@ -539,7 +544,7 @@ function renderCollabsTemplate(collabs) {
 
 async function fetchTags() {
     try {
-        const res = await fetch('http://localhost:3000/api/tags', { headers: { 'Authorization': `Bearer ${token}` } });
+        const res = await fetch(`${BASE_URL}/api/tags`, { headers: { 'Authorization': `Bearer ${token}` } });
         const result = await res.json();
         if (result.success) { 
             allTags = result.data; 
@@ -585,7 +590,7 @@ function updateTagDropdown() {
 
 async function fetchActivities() {
     try {
-        const res = await fetch('http://localhost:3000/api/activities', { headers: { 'Authorization': `Bearer ${token}` } });
+        const res = await fetch(`${BASE_URL}/api/activities`, { headers: { 'Authorization': `Bearer ${token}` } });
         const result = await res.json();
         if (result.success) { 
             allActivities = result.data; 
@@ -623,8 +628,8 @@ function renderActivities(activities) {
 async function fetchAdminData() {
     try {
         const [usersRes, bulletinsRes] = await Promise.all([
-            fetch('http://localhost:3000/api/users', { headers: { 'Authorization': `Bearer ${token}` } }),
-            fetch('http://localhost:3000/api/bulletins', { headers: { 'Authorization': `Bearer ${token}` } })
+            fetch(`${BASE_URL}/api/users`, { headers: { 'Authorization': `Bearer ${token}` } }),
+            fetch(`${BASE_URL}/api/bulletins`, { headers: { 'Authorization': `Bearer ${token}` } })
         ]);
         const usersResult = await usersRes.json();
         const bulletinsResult = await bulletinsRes.json();
@@ -711,7 +716,7 @@ async function fetchBulletinWidget() {
     const widget = document.getElementById('bulletinWidget');
     if (!widget) return;
     try {
-        const res = await fetch('http://localhost:3000/api/bulletins', { headers: { 'Authorization': `Bearer ${token}` } });
+        const res = await fetch(`${BASE_URL}/api/bulletins`, { headers: { 'Authorization': `Bearer ${token}` } });
         const result = await res.json();
         if (result.success && result.data.length > 0) {
             const latest = result.data.slice(0, 3);
@@ -828,7 +833,7 @@ if(folderForm) folderForm.addEventListener('submit', async (e) => {
     const name = document.getElementById('folderName').value;
     try {
         const isEditing = editingFolderId !== null;
-        const url = isEditing ? `http://localhost:3000/api/folders/${editingFolderId}` : `http://localhost:3000/api/folders`;
+        const url = isEditing ? `${BASE_URL}/api/folders/${editingFolderId}` : `${BASE_URL}/api/folders`;
         const method = isEditing ? 'PUT' : 'POST';
         await fetch(url, { method, headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify({ name }) });
         
@@ -842,7 +847,7 @@ if(collabForm) collabForm.addEventListener('submit', async (e) => {
     const data = { email: document.getElementById('collabEmail').value, role: document.getElementById('collabRole').value };
     try {
         const isEditing = editingCollabId !== null;
-        const url = isEditing ? `http://localhost:3000/api/collabs/${editingCollabId}` : `http://localhost:3000/api/collabs`;        const method = isEditing ? 'PUT' : 'POST';
+        const url = isEditing ? `${BASE_URL}/api/collabs/${editingCollabId}` : `${BASE_URL}/api/collabs`;        const method = isEditing ? 'PUT' : 'POST';
         const response = await fetch(url, { method: method, headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify(data) });
         const result = await response.json();
         
@@ -858,7 +863,7 @@ if(tagForm) tagForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         const data = { name: document.getElementById('tagName').value, color: document.getElementById('tagColor').value };
         const isEditing = editingTagId !== null;
-        const url = isEditing ? `http://localhost:3000/api/tags/${editingTagId}` : '/api/tags';
+        const url = isEditing ? `${BASE_URL}/api/tags/${editingTagId}` : '/api/tags';
         const method = isEditing ? 'PUT' : 'POST';
         try {
             await fetch(url, { method, headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify(data) });
@@ -873,7 +878,7 @@ if (bulletinForm) {
         const data = { title: document.getElementById('bulletinTitle').value, content: document.getElementById('bulletinContent').value };
         try {
             const isEditing = editingBulletinId !== null;
-            const url = isEditing ? `http://localhost:3000/api/bulletins/${editingBulletinId}` : '/api/bulletins';
+            const url = isEditing ? `${BASE_URL}/api/bulletins/${editingBulletinId}` : '/api/bulletins';
             const method = isEditing ? 'PUT' : 'POST';
             const response = await fetch(url, { method, headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify(data) });
             const result = await response.json();
@@ -904,14 +909,14 @@ if(cancelBulletinBtn) cancelBulletinBtn.addEventListener('click', () => { bullet
 notesContainer.addEventListener('click', async (e) => {
     if (e.target.classList.contains('delete-btn')) {
         if (confirm("Hapus catatan ini?")) { 
-            await fetch(`http://localhost:3000/api/notes/${e.target.getAttribute('data-id')}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } }); 
+            await fetch(`${BASE_URL}/api/notes/${e.target.getAttribute('data-id')}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } }); 
             fetchNotes(); 
             logActivity('Hapus Catatan', 'Sebuah catatan telah dihapus');
         }
     }
     if (e.target.classList.contains('note-check')) {
         const statusBaru = e.target.checked ? 'completed' : 'pending';
-        await fetch(`http://localhost:3000/api/notes/${e.target.getAttribute('data-id')}`, { method: 'PUT', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify({ status: statusBaru }) });
+        await fetch(`${BASE_URL}/api/notes/${e.target.getAttribute('data-id')}`, { method: 'PUT', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify({ status: statusBaru }) });
         fetchNotes();
         logActivity('Ubah Status Catatan', `Status diubah menjadi: ${statusBaru}`);
     }
@@ -928,7 +933,7 @@ notesContainer.addEventListener('click', async (e) => {
 
     if (e.target.classList.contains('delete-folder-btn')) {
         if (confirm("Hapus folder ini?")) {
-            await fetch(`http://localhost:3000/api/folders/${e.target.getAttribute('data-id')}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } }); 
+            await fetch(`${BASE_URL}/api/folders/${e.target.getAttribute('data-id')}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } }); 
             fetchFolders(); 
             fetchNotes(); 
             showToast('Folder berhasil dihapus', 'success');
@@ -960,14 +965,14 @@ notesContainer.addEventListener('click', async (e) => {
     }
     if (e.target.classList.contains('delete-collab-btn')) {
         if (confirm("Cabut akses kolaborator ini?")) { 
-            await fetch(`http://localhost:3000/api/collabs/${e.target.getAttribute('data-id')}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } }); 
+            await fetch(`${BASE_URL}/api/collabs/${e.target.getAttribute('data-id')}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } }); 
             fetchCollabs(); 
             logActivity('Cabut Akses', 'Akses kolaborator dicabut'); 
         }
     }
     if (e.target.classList.contains('delete-tag-btn')) {
         if (confirm("Yakin ingin menghapus Tag ini?")) { 
-            await fetch(`http://localhost:3000/api/tags/${e.target.getAttribute('data-id')}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } }); 
+            await fetch(`${BASE_URL}/api/tags/${e.target.getAttribute('data-id')}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } }); 
             fetchTags(); 
             logActivity('Hapus Tag', 'Sebuah tag dihapus');
         }
@@ -983,7 +988,7 @@ notesContainer.addEventListener('click', async (e) => {
     if (e.target.classList.contains('delete-activity-btn')) {
         if (confirm("Hapus riwayat aktivitas ini?")) {
             try {
-                await fetch(`http://localhost:3000/api/activities/${e.target.getAttribute('data-id')}`, { 
+                await fetch(`${BASE_URL}/api/activities/${e.target.getAttribute('data-id')}`, { 
                     method: 'DELETE', 
                     headers: { 'Authorization': `Bearer ${token}` } 
                 });
@@ -1000,7 +1005,7 @@ notesContainer.addEventListener('click', async (e) => {
         const username = e.target.getAttribute('data-username');
         if (await showCustomConfirm('Reset Limit', `Reset limit edit kolaborasi untuk user "${username}" menjadi 0?`)) {
             try {
-                const response = await fetch(`http://localhost:3000/api/users/${userId}/reset-collab`, {
+                const response = await fetch(`${BASE_URL}/api/users/${userId}/reset-collab`, {
                     method: 'PUT',
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
@@ -1029,7 +1034,7 @@ notesContainer.addEventListener('click', async (e) => {
     if (e.target.classList.contains('delete-bulletin-btn')) {
         if (await showCustomConfirm('Hapus Buletin', 'Yakin ingin menghapus buletin ini?')) {
             try {
-                const response = await fetch(`http://localhost:3000/api/bulletins/${e.target.getAttribute('data-id')}`, {
+                const response = await fetch(`${BASE_URL}/api/bulletins/${e.target.getAttribute('data-id')}`, {
                     method: 'DELETE',
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
@@ -1177,7 +1182,6 @@ if (settingsForm) {
             if (result.success) {
                 showToast("Profil berhasil diperbarui!", "success");
                 
-                // Menggunakan data 'result.user' dari server untuk memastikan ID tetap terjaga aman
                 const updatedUser = { 
                     id: result.user.id, 
                     username: result.user.username, 
@@ -1211,7 +1215,7 @@ if(delAccBtn) delAccBtn.addEventListener('click', async () => {
     if (await showCustomConfirm('Hapus Akun', 'Menghapus akun akan memusnahkan seluruh catatan dan folder Anda secara permanen. Lanjutkan?')) {
         if (await showCustomConfirm('Konfirmasi Akhir', 'Ketik kata HAPUS di bawah ini untuk memusnahkan akun:', true)) {
             try {
-                const response = await fetch(`http://localhost:3000/api/users/${user.id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } });
+                const response = await fetch(`${BASE_URL}/api/users/${user.id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } });
                 const result = await response.json();
                 if (result.success) { 
                     showToast("Akun berhasil dimusnahkan. Selamat tinggal!", "success"); 
