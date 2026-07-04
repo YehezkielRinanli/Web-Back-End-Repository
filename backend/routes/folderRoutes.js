@@ -5,12 +5,14 @@ import {
     updateFolder, 
     deleteFolder 
 } from '../controllers/folderController.js';
+import { verifyToken } from '../middleware/auth.js'; // Tambahkan import ini
 
 const router = express.Router();
 
-router.get('/', getAllFolders);
-router.post('/', createFolder);
-router.put('/:id', updateFolder);
-router.delete('/:id', deleteFolder);
+// Pasang verifyToken di semua rute folder
+router.get('/', verifyToken, getAllFolders);
+router.post('/', verifyToken, createFolder);
+router.put('/:id', verifyToken, updateFolder);
+router.delete('/:id', verifyToken, deleteFolder);
 
-export default router; 
+export default router;

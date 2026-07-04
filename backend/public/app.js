@@ -1176,7 +1176,15 @@ if (settingsForm) {
 
             if (result.success) {
                 showToast("Profil berhasil diperbarui!", "success");
-                const updatedUser = { ...user, username: newUsername, email: newEmail, avatarUrl: avatarUrlBaru };
+                
+                // Menggunakan data 'result.user' dari server untuk memastikan ID tetap terjaga aman
+                const updatedUser = { 
+                    id: result.user.id, 
+                    username: result.user.username, 
+                    email: result.user.email, 
+                    role: result.user.role, 
+                    avatarUrl: avatarUrlBaru 
+                };
                 localStorage.setItem('user', JSON.stringify(updatedUser));
                 
                 renderUserAvatarBaru(updatedUser);

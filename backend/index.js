@@ -88,8 +88,12 @@ console.log("Memulai sinkronisasi database MySQL...");
 db.sync({ alter: true })
     .then(() => {
         console.log("Database MySQL berhasil disinkronkan!");
-        httpServer.listen(3000, () => {
-            console.log("Server API Memoora berjalan di http://localhost:3000");
+        
+        // Menggunakan port dari Railway jika ada, jika tidak ada (di laptop) pakai 3000
+        const PORT = process.env.PORT || 3000; 
+        
+        httpServer.listen(PORT, () => {
+            console.log(`Server API Memoora berjalan di port ${PORT}`);
         });
     })
     .catch((error) => {

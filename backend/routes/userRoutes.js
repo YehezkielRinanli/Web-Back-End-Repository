@@ -6,13 +6,19 @@ import { getAllUsers, resetCollabLimit, requestLimitReset } from '../controllers
 import { updateAvatar } from "../controllers/userController.js";
 import { upload } from "../middleware/uploadMiddleware.js";
 import { verifyToken, verifyAdmin } from '../middleware/auth.js';
+import dotenv from "dotenv";
+
+dotenv.config();
 
 const router = express.Router();
-const JWT_SECRET = "RAHASIA_MEMOORA_2026";
+
+// Mengambil JWT_SECRET secara aman dari file .env
+const JWT_SECRET = process.env.JWT_SECRET;
 
 router.get('/', verifyToken, verifyAdmin, getAllUsers);
 router.put('/:id/reset-collab', verifyToken, verifyAdmin, resetCollabLimit);
 router.put('/request-reset', verifyToken, requestLimitReset);
+
 router.post('/register', async (req, res) => {
     try {
         const { username, email, password } = req.body;
